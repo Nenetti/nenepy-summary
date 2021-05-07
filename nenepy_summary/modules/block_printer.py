@@ -56,7 +56,7 @@ class _BlockPrinter(_AbstractModule):
         n_outputs = len(formatted_outputs)
 
         needs_top_space = ((n_lines > 1 or self.module.has_children()) and (not before_block_bottom))
-        needs_bottom_space = (n_lines > 1)
+        needs_bottom_space = (n_lines > 1 or self.module.is_last_module_in_sequential)
 
         architectures = [formatted_architecture, *self._init_list(self.module.network_architecture.to_bottom_formant(), n_lines - 1)]
         parameters = [self._to_parameter_format(*formatted_parameters), *self._init_list(self._to_parameter_format("", "", "", "", ""), n_lines - 1)]
@@ -79,42 +79,6 @@ class _BlockPrinter(_AbstractModule):
             times.append("")
             inputs.append("")
             outputs.append("")
-        #
-        # if n_lines > 1:
-        #     n_lines += 1
-        #     architectures = self._init_list(self.module.network_architecture.to_bottom_formant(), n_lines)
-        #     architectures[0] = self.module.network_architecture.to_top_format()
-        #     architectures[1] = formatted_architecture
-        #     parameters = self._init_list(self._to_parameter_format("", "", "", "", ""), n_lines)
-        #     parameters[1] = self._to_parameter_format(*formatted_parameters)
-        #     times = self._init_list("", n_lines)
-        #     times[1] = formatted_time
-        #
-        #     inputs = self._init_list("", n_lines)
-        #     inputs[1:n_inputs + 1] = formatted_inputs
-        #     outputs = self._init_list("", n_lines)
-        #     outputs[1:n_outputs + 1] = formatted_outputs
-        #
-        # if self.module.has_children():
-        #     n_lines += 1
-        #     architectures = self._init_list(self.module.network_architecture.to_bottom_formant(), n_lines)
-        #     architectures[0] = self.module.network_architecture.to_top_format()
-        #     architectures[1] = formatted_architecture
-        #     parameters = self._init_list(self._to_parameter_format("", "", "", "", ""), n_lines)
-        #     parameters[1] = self._to_parameter_format(*formatted_parameters)
-        #     times = self._init_list("", n_lines)
-        #     times[1] = formatted_time
-        #
-        #     inputs = self._init_list("", n_lines)
-        #     inputs[1:n_inputs] = formatted_inputs
-        #     outputs = self._init_list("", n_lines)
-        #     outputs[1:n_outputs] = formatted_outputs
-
-        # architectures = [formatted_architecture] + self._init_list(self.module.network_architecture.to_bottom_formant(), (n_lines - 1))
-        # parameters = [self._to_parameter_format(*formatted_parameters)] + self._init_list(self._to_parameter_format("", "", "", "", ""), (n_lines - 1))
-        # times = [formatted_time] + self._init_list("", (n_lines - 1))
-        # inputs = formatted_inputs + self._init_list("", (n_lines - n_inputs))
-        # outputs = formatted_outputs + self._init_list("", (n_lines - n_outputs))
 
         lines = [""] * n_lines
         for i in range(n_lines):

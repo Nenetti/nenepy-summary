@@ -18,7 +18,8 @@ class TorchSummary:
                  device="cuda" if torch.cuda.is_available() else "cpu",
                  is_print=True,
                  display_delay_time=0,
-                 is_exit=False
+                 is_exit=False,
+                 forward_function=None,
                  ):
         """
 
@@ -43,6 +44,12 @@ class TorchSummary:
         self.roots = []
         self.ordered_modules = []
         self.is_exit = is_exit
+        self.forward_function = None
+        if forward_function is not None:
+            if isinstance(forward_function, str):
+                self.forward_function = forward_function
+            else:
+                self.forward_function = forward_function.__name__
         if is_train:
             self.model.train()
         else:
@@ -62,12 +69,18 @@ class TorchSummary:
         return self._forward(x, **kwargs)
 
     def forward_tensor(self, input_tensor, **kwargs):
-        if not isinstance(input_tensor, (tuple, list, dict, set)):
-            if isinstance(input_tensor, torch.Tensor):
-                input_tensor = input_tensor.to(self.device)
+        if isinstance(input_tensor, torch.Tensor):
+            input_tensor = input_tensor.to(self.device)
+            input_tensor = [input_tensor]
+
+        elif not hasattr(input_tensor, "__iter__"):
             input_tensor = [input_tensor]
 
         return self._forward(input_tensor, **kwargs)
+
+    def forward_dict(self, input_dict):
+        input_dict = dict([(key, value.to(self.device) if isinstance(value, torch.Tensor) else value) for key, value in input_dict.items()])
+        return self._forward_dict(input_dict)
 
     def __call__(self, input_tensor, **kwargs):
         return self.forward_tensor(input_tensor, **kwargs)
@@ -77,10 +90,10 @@ class TorchSummary:
     #   Instance Method (Private)
     #
     # ==================================================================================================
-    def _forward(self, x, **kwargs):
+    def _forward_pre_hook(self):
         self.model.apply(self._register_hook)
-        out = self.model(*x, **kwargs)
 
+    def _forward_hook(self):
         sleep(self.display_delay_time)
         if self.is_print:
             self._print_network()
@@ -90,6 +103,22 @@ class TorchSummary:
         if self.is_exit:
             sys.exit()
 
+    def _forward(self, x, **kwargs):
+        self._forward_pre_hook()
+        if self.forward_function is None:
+            out = self.model(*x, **kwargs)
+        else:
+            out = getattr(self.model, self.forward_function)(*x, **kwargs)
+        self._forward_hook()
+        return out
+
+    def _forward_dict(self, kwargs):
+        self._forward_pre_hook()
+        if self.forward_function is None:
+            out = self.model(**kwargs)
+        else:
+            out = getattr(self.model, self.forward_function)(**kwargs)
+        self._forward_hook()
         return out
 
     def _print_network(self):
